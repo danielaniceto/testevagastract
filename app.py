@@ -1,5 +1,5 @@
 from flask import Flask
-from api import api_routes
+from testevagastract.routes.api import api_routes
 
 app = Flask(__name__)
 
