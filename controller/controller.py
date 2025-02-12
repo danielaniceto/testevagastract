@@ -1,5 +1,6 @@
-from flask import Response
 import requests
+import requests
+from flask import jsonify, Response
 import io
 import csv
 
@@ -7,6 +8,7 @@ AUTH_TOKEN = "Bearer ProcessoSeletivoStract2025"
 BASE_URL = "https://sidebar.stract.to/api/accounts"
 
 class ControllerCandidato:
+    @staticmethod
     def dados_candidato():
         return {
                 "nome": "Daniel Gustavo Aniceto",
@@ -16,33 +18,74 @@ class ControllerCandidato:
     
 class ControllerPlataforma:
     @staticmethod
-    def get_insights_by_platform(platform):
-        """Obtém os insights de anúncios de uma plataforma específica"""
-
-        url_accounts = f"{BASE_URL}/accounts?platform={platform}"
-        response_accounts = requests.get(url_accounts, headers={"Authorization": f'Bearer {AUTH_TOKEN}'})
-
-        if response_accounts.status_code != 200:
-            return {"error": "Erro ao buscar contas da plataforma"}
-
-        accounts_data = response_accounts.json()
-
-        insights_data = []
-
-        for account in accounts_data.get("accounts", []):
-            account_name = account.get("name", "Desconhecido")
-
-            url_insights = f"{BASE_URL}/insights?platform={platform}&account={account_name}&token={AUTH_TOKEN}"
-            response_insights = requests.get(url_insights, headers={"Authorization": f'Bearer {AUTH_TOKEN}'})
-
-            if response_insights.status_code != 200:
-                continue  # Se der erro em um insight, pula para o próximo
-
-            insights = response_insights.json()
-
-            for insight in insights.get("insights", []):
-                insight["Platform"] = platform  # Adiciona a plataforma
-                insight["Account Name"] = account_name  # Adiciona o nome da conta
-                insights_data.append(insight)
-
-        return insights_data
+    def get_platforms(plataforma):
+        url = f"{BASE_URL}/api/accounts?platform={plataforma}"
+        response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
+        if response.status_code != 200:
+            return jsonify({"error": "Erro ao buscar dados"}), 500
+        data = response.json()
+        table = [{"Platform": plataforma, "Ad Name": account.get("ad_name"), "Clicks": account.get("clicks")}
+                 for account in data["accounts"]]
+        return jsonify(table)
+    
+    @staticmethod
+    def get_plataform_summary(plataforma):
+        url = f"{BASE_URL}/api/accounts?platform={plataforma}"
+        response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
+        if response.status_code != 200:
+            return jsonify({"error": "Erro ao buscar dados"}), 500
+        data = response.json()
+        summary = []
+        accounts = {}
+        for account in data["accounts"]:
+            name = account.get("ad_name")
+            if name not in accounts:
+                accounts[name] = {"Clicks": 0}
+            accounts[name]["Clicks"] += account.get("clicks", 0)
+        
+        for ad_name, stats in accounts.items():
+            summary.append({
+                "Platform": plataforma,
+                "Ad Name": ad_name,
+                "Clicks": stats["Clicks"]
+            })
+        return jsonify(summary)
+    
+    @staticmethod
+    def get_all_ads():
+        url = f"{BASE_URL}/api/platforms"
+        response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
+        if response.status_code != 200:
+            return jsonify({"error": "Erro ao buscar dados"}), 500
+        platforms = response.json()["platforms"]
+        all_ads = []
+        for platform in platforms:
+            all_ads.extend(ControllerPlataforma.get_plataforms(platform))
+        return jsonify(all_ads)
+    
+    @staticmethod
+    def get_all_summary():
+        url = f"{BASE_URL}/api/platforms"
+        response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
+        if response.status_code != 200:
+            return jsonify({"error": "Erro ao buscar dados"}), 500
+        platforms = response.json()["platforms"]
+        all_summary = []
+        for platform in platforms:
+            all_summary.extend(ControllerPlataforma.get_plataform_summary(platform))
+        return jsonify(all_summary)
+    
+    @staticmethod
+    def get_plataforms_csv(plataforma):
+        url = f"{BASE_URL}/api/accounts?platform={plataforma}"
+        response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
+        if response.status_code != 200:
+            return jsonify({"error": "Erro ao buscar dados"}), 500
+        data = response.json()
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=["Platform", "Ad Name", "Clicks"])
+        writer.writeheader()
+        for account in data["accounts"]:
+            writer.writerow({"Platform": plataforma, "Ad Name": account.get("ad_name"), "Clicks": account.get("clicks")})
+        output.seek(0)
+        return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=platform_report.csv"})
