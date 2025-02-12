@@ -78,14 +78,18 @@ class ControllerPlataforma:
     def get_plataforma_csv(plataforma):
         url = f"{BASE_URL}/api/accounts?platform={plataforma}"
         response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
+        
         if response.status_code != 200:
             return jsonify({"error": "Erro ao buscar dados"}), 500
+        
         data = response.json()
         output = io.StringIO()
         writer = csv.DictWriter(output, fieldnames=["Platform", "Ad Name", "Clicks"])
         writer.writeheader()
+
         for account in data["accounts"]:
             writer.writerow({"Platform": plataforma, "Ad Name": account.get("ad_name"), "Clicks": account.get("clicks")})
         output.seek(0)
+
         return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=platform_report.csv"})
     
