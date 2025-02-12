@@ -1,5 +1,4 @@
 import requests
-import requests
 from flask import jsonify, Response
 import io
 import csv
