@@ -18,7 +18,7 @@ class ControllerCandidato:
     
 class ControllerPlataforma:
     @staticmethod
-    def get_platforms(plataforma):
+    def get_plataforma(plataforma):
         url = f"{BASE_URL}/api/accounts?platform={plataforma}"
         response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
         if response.status_code != 200:
@@ -29,7 +29,7 @@ class ControllerPlataforma:
         return jsonify(table)
     
     @staticmethod
-    def get_plataform_summary(plataforma):
+    def get_plataforma_resumo(plataforma):
         url = f"{BASE_URL}/api/accounts?platform={plataforma}"
         response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
         if response.status_code != 200:
@@ -52,7 +52,7 @@ class ControllerPlataforma:
         return jsonify(summary)
     
     @staticmethod
-    def get_all_ads():
+    def get_geral():
         url = f"{BASE_URL}/api/platforms"
         response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
         if response.status_code != 200:
@@ -60,11 +60,11 @@ class ControllerPlataforma:
         platforms = response.json()["platforms"]
         all_ads = []
         for platform in platforms:
-            all_ads.extend(ControllerPlataforma.get_plataforms(platform))
+            all_ads.extend(ControllerPlataforma.get_plataforma(platform))
         return jsonify(all_ads)
     
     @staticmethod
-    def get_all_summary():
+    def get_geral_resumo():
         url = f"{BASE_URL}/api/platforms"
         response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
         if response.status_code != 200:
@@ -72,11 +72,11 @@ class ControllerPlataforma:
         platforms = response.json()["platforms"]
         all_summary = []
         for platform in platforms:
-            all_summary.extend(ControllerPlataforma.get_plataform_summary(platform))
+            all_summary.extend(ControllerPlataforma.get_plataforma_resumo(platform))
         return jsonify(all_summary)
     
     @staticmethod
-    def get_plataforms_csv(plataforma):
+    def get_plataforma_csv(plataforma):
         url = f"{BASE_URL}/api/accounts?platform={plataforma}"
         response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
         if response.status_code != 200:
@@ -89,3 +89,4 @@ class ControllerPlataforma:
             writer.writerow({"Platform": plataforma, "Ad Name": account.get("ad_name"), "Clicks": account.get("clicks")})
         output.seek(0)
         return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=platform_report.csv"})
+    
