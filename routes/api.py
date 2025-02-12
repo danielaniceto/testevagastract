@@ -8,19 +8,19 @@ def api_routes(app):
     def candidato():
         return jsonify(ControllerCandidato.dados_candidato())
            
-    @app.route('/<plataforma>')
+    @app.route("/{{plataforma}}")
     def get_plataform_report(platform):
         return ControllerPlataforma.get_plataforma(platform)
     
-    @app.route('/<platform>/resumo')
+    @app.route("/{{plataforma}}/resumo")
     def platforma_resumo(platform):
         return ControllerPlataforma.get_plataforma_resumo(platform)
     
-    @app.route('/geral')
+    @app.route("/geral")
     def geral():
         return ControllerPlataforma.get_geral()
     
-    @app.route('/geral/resumo')
+    @app.route("/geral/resumo")
     def geral_resumo():
         return ControllerPlataforma.get_geral_resumo()
 
