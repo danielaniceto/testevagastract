@@ -2,9 +2,12 @@ import requests
 from flask import jsonify, Response
 import io
 import csv
+import logging
 
 AUTH_TOKEN = "Bearer ProcessoSeletivoStract2025"
 BASE_URL = "https://sidebar.stract.to/api/accounts"
+
+logging.basicConfig(level=logging.INFO)
 
 class ControllerCandidato:
     @staticmethod
@@ -20,12 +23,35 @@ class ControllerPlataforma:
     def get_plataforma(plataforma):
         url = f"{BASE_URL}/api/accounts?platform={plataforma}"
         response = requests.get(url, headers={"Authorization": f"Bearer {AUTH_TOKEN}"})
+
+        logging.info(f"EU SOU O RESPONSE: {response}")
+
         if response.status_code != 200:
             return jsonify({"error": "Erro ao buscar dados"}), 500
+        
         data = response.json()
-        table = [{"Platform": plataforma, "Ad Name": account.get("ad_name"), "Clicks": account.get("clicks")}
-                 for account in data["accounts"]]
-        return jsonify(table)
+
+        accounts = data.get("accounts", [])
+
+        if not accounts:
+            return jsonify({"error": "Nenhum dado foi encontrado"}), 404
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        writer.writerow(["Plataforma", "Nome do Anúncio", "Clicks"])
+
+        for account in accounts:
+            writer.writerow([
+                plataforma,
+                account.get("ad_name", "Sem Nome"),
+                account.get("clicks", 0)
+            ])
+
+        response = Response(output.getvalue(), content_type="text/csv")
+        response.headers["Content-Disposition"] = f"attachment; filename={plataforma}_report.csv"
+
+        return response
     
     @staticmethod
     def get_plataforma_resumo(plataforma):
